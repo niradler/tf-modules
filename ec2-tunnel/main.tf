@@ -1,6 +1,6 @@
 
 terraform {
-  required_version = ">= 0.14"
+  required_version = ">= 1.2.7"
   backend "s3" {
     bucket = "server-backups-nir"
     key    = "tf/ec2-tunnel"
@@ -59,8 +59,8 @@ resource "aws_security_group" "public" {
 
   ingress {
     protocol    = "tcp"
-    from_port   = 80
-    to_port     = 80
+    from_port   = 8080
+    to_port     = 8080
     cidr_blocks = ["0.0.0.0/0"]
   }
 
@@ -83,6 +83,10 @@ resource "aws_instance" "public" {
   key_name        = aws_key_pair.key_pair.key_name
   user_data       = <<EOF
 #!/bin/bash
+
+sudo apt-get update
+sudo apt-get upgrade -y
+sudo apt-get install net-tools -y
 echo "GatewayPorts yes" >> /etc/ssh/sshd_config
 sudo systemctl restart ssh
 EOF
@@ -101,13 +105,6 @@ resource "aws_security_group" "private" {
     from_port   = 22
     protocol    = "tcp"
     to_port     = 22
-    cidr_blocks = ["0.0.0.0/0"]
-  }
-
-  ingress {
-    protocol    = "tcp"
-    from_port   = 80
-    to_port     = 80
     cidr_blocks = ["0.0.0.0/0"]
   }
 
@@ -131,17 +128,19 @@ resource "aws_instance" "private" {
   user_data       = <<EOF
 #!/bin/bash
 
+echo "*******************initialized****************"
 sudo apt-get update
 sudo apt-get upgrade -y
-sudo apt-get install apache2 -y
+sudo apt-get install apache2 autossh net-tools -y
 sudo systemctl restart apache2
+sudo mkdir /var/www/html/
 sudo chmod 777 -R /var/www/html/
 cd /var/www/html/
 sudo echo "<h1>This is our test website deployed using Terraform.</h1>" > index.html
 cd /home/ubuntu
 echo "${tls_private_key.key_pair.private_key_pem}" > key.pem
 sudo chmod 600 key.pem
-ssh -N -i "key.pem" ubuntu@${aws_instance.public.public_ip} -R 80:localhost:80 -C
+autossh -M 20000 -N -i "key.pem" ubuntu@${aws_instance.public.public_ip} -R 8080:localhost:80 -C
 EOF  
 
   tags = {
