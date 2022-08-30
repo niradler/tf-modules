@@ -1,0 +1,4 @@
+FROM ekzhang/bore
+ENV PORT 8080
+EXPOSE 8080
+CMD ["local", "8080", "--to", "https://localhost"]

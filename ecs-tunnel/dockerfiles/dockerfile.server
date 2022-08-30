@@ -1,0 +1,3 @@
+FROM ekzhang/bore
+ENV PORT 7835
+CMD ["./bore","server"]
