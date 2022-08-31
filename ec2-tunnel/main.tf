@@ -150,7 +150,7 @@ cd /home/ubuntu
 echo "${tls_private_key.key_pair.private_key_pem}" > key.pem
 sudo chmod 600 key.pem
 echo "*******************ssh key****************"
-sudo autossh -M 20000 -N -i "key.pem" ubuntu@${aws_eip.public.public_ip} -R 8080:localhost:80 -C
+sudo autossh -M 20000 -N -i "key.pem" ubuntu@${aws_eip.public.public_ip} -R 8080:localhost:80 -oStrictHostKeyChecking=no -C
 EOF  
 
   tags = {
