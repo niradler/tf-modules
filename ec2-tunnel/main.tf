@@ -84,6 +84,7 @@ resource "aws_instance" "public" {
   user_data       = <<EOF
 #!/bin/bash
 
+echo "*******************initialized****************"
 sudo apt-get update
 sudo apt-get upgrade -y
 sudo apt-get install net-tools -y
@@ -105,6 +106,13 @@ resource "aws_security_group" "private" {
     from_port   = 22
     protocol    = "tcp"
     to_port     = 22
+    cidr_blocks = ["0.0.0.0/0"]
+  }
+
+  ingress {
+    from_port   = 80
+    protocol    = "tcp"
+    to_port     = 80
     cidr_blocks = ["0.0.0.0/0"]
   }
 
@@ -132,18 +140,25 @@ echo "*******************initialized****************"
 sudo apt-get update
 sudo apt-get upgrade -y
 sudo apt-get install apache2 autossh net-tools -y
+echo "*******************packages****************"
 sudo systemctl restart apache2
-sudo mkdir /var/www/html/
 sudo chmod 777 -R /var/www/html/
 cd /var/www/html/
 sudo echo "<h1>This is our test website deployed using Terraform.</h1>" > index.html
+echo "*******************web****************"
 cd /home/ubuntu
 echo "${tls_private_key.key_pair.private_key_pem}" > key.pem
 sudo chmod 600 key.pem
-autossh -M 20000 -N -i "key.pem" ubuntu@${aws_instance.public.public_ip} -R 8080:localhost:80 -C
+echo "*******************ssh key****************"
+autossh -M 20000 -N -i "key.pem" ubuntu@${aws_eip.public.public_ip} -R 8080:localhost:80 -C
 EOF  
 
   tags = {
     Name = "private"
   }
+}
+
+resource "aws_eip" "public" {
+  instance = aws_instance.public.id
+  vpc      = false
 }
